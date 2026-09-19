@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zonely — a fair meeting time for distributed teams</title>
+<meta name="description" content="Find a meeting time across timezones that doesn't always punish the same person. Scores every slot by how much it hurts, and rotates the pain fairly.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="brand"><span class="globe">🌍</span> Zonely</div>
+    <p class="tagline">Stop making the same person take the 11pm call.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="panel" id="team-panel">
+    <div class="panel-head">
+      <h2>Your team</h2>
+      <button type="button" class="btn btn-ghost" id="add-member">+ Add teammate</button>
+    </div>
+
+    <div id="members" class="members"></div>
+
+    <div class="chips">
+      <span class="chips-label">Quick add</span>
+      {% for label, tz in popular %}
+        <button type="button" class="chip" data-tz="{{ tz }}" data-label="{{ label }}">{{ label }}</button>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel controls">
+    <label class="field">
+      <span>Date</span>
+      <input type="date" id="day" value="{{ day }}">
+    </label>
+    <label class="field">
+      <span>Meeting length</span>
+      <select id="duration">
+        {% for d in durations %}
+          <option value="{{ d }}" {% if d == duration %}selected{% endif %}>{{ d }} min</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="field grow">
+      <span>Share this plan</span>
+      <div class="share">
+        <input type="text" id="share-url" readonly>
+        <button type="button" class="btn" id="copy-link">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="results-panel">
+    <div class="panel-head">
+      <h2>Fairest slots</h2>
+      <span class="hint" id="status"></span>
+    </div>
+    <div id="slots" class="slots"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>The whole day</h2>
+      <div class="legend">
+        <span><i class="sw work"></i>workday</span>
+        <span><i class="sw edge"></i>edges</span>
+        <span><i class="sw rough"></i>rough</span>
+        <span><i class="sw sleep"></i>asleep</span>
+      </div>
+    </div>
+    <div id="heatstrip" class="heatstrip"></div>
+  </section>
+
+  <section class="panel explainer">
+    <h2>How the fairness score works</h2>
+    <p>
+      Every half-hour slot gets a <strong>pain score</strong> from 0 to 100 for each
+      teammate — 0 if it sits inside their working day, 100 if it would wake them up.
+      Hours just outside the workday cost more the further out they go, because the
+      fourth hour past dinner hurts more than the first.
+    </p>
+    <p>
+      A slot's score is the team's <strong>average pain, plus a penalty for being
+      lopsided</strong>. That's deliberate: optimising the average alone will happily
+      sacrifice one person every single week to keep everyone else comfortable.
+    </p>
+    <p>
+      Once you log a meeting, the person who took the hit carries a
+      <strong>burden</strong>. The next time you plan, Zonely pushes pain toward
+      whoever has carried the least — so the bad slot rotates instead of landing on
+      your Singapore colleague forever.
+    </p>
+  </section>
+
+</main>
+
+<footer class="wrap footnote">
+  <p>All times computed with the IANA timezone database, daylight saving included.
+     Nothing is stored — your team lives in the URL.</p>
+</footer>
+
+<datalist id="all-zones">
+  {% for z in all_zones %}<option value="{{ z }}">{% endfor %}
+</datalist>
+
+<template id="member-template">
+  <div class="member">
+    <button type="button" class="remove" title="Remove">×</button>
+    <input class="m-name" type="text" placeholder="Name" maxlength="24">
+    <input class="m-tz" type="text" list="all-zones" placeholder="Area/City" spellcheck="false">
+    <div class="hours">
+      <label>Works <input class="m-start" type="number" min="0" max="24" step="0.5"> – <input class="m-end" type="number" min="0" max="24" step="0.5"></label>
+      <label>Sleeps <input class="m-sleep-start" type="number" min="0" max="24" step="0.5"> – <input class="m-sleep-end" type="number" min="0" max="24" step="0.5"></label>
+    </div>
+    <div class="burden-row">
+      <span class="burden-label">Burden carried <b class="m-burden">0</b></span>
+      <button type="button" class="btn btn-tiny reset-burden">reset</button>
+    </div>
+  </div>
+</template>
+
+<script>
+  window.ZONELY = {{ {'members': members | map(attribute='__dict__') | list, 'day': day, 'duration': duration} | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
