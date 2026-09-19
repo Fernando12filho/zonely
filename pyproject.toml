@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# Bare `pytest` does not put the working directory on sys.path the way
+# `python -m pytest` does. Without this, `import zonely` fails in CI.
+pythonpath = ["."]
+testpaths = ["tests"]
